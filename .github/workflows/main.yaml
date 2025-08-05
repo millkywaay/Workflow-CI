@@ -1,0 +1,51 @@
+name: ML Training CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  train-and-upload-model:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
+    steps:
+      - name: Run actions/checkout@v3
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.12.7
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.7'
+
+      - name: Check Env
+        run: python --version
+
+      - name: Install dependencies
+        run: pip install -r MLProject/requirements.txt
+
+      - name: Set MLflow Tracking URI
+        run: echo "MLflow will use a local 'mlruns' directory for this run."
+
+      - name: Run mlflow project
+        run: python MLProject/modelling.py
+
+      - name: Upload to GitHub
+        run: |
+          # Mencari path ke artefak model yang baru dibuat
+          LATEST_RUN_DIR=$(ls -td mlruns/0/*/ | head -1)
+          MODEL_PATH="${LATEST_RUN_DIR}artifacts/model"
+          
+          # Membuat folder tujuan dan menyalin artefak model
+          mkdir -p production_model
+          cp -r $MODEL_PATH/* production_model/
+          echo "Model artifact copied to production_model folder for commit."
+
+      - name: Commit and Push to Repository
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "CI: Auto-commit new production model"
+          file_pattern: 'production_model/*'

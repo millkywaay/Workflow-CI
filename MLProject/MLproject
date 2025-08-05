@@ -1,0 +1,7 @@
+name: HeartDiseaseCI
+
+python_env: requirements.txt
+
+entry_points:
+  main:
+    command: "python modelling.py"
